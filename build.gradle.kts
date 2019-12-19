@@ -5,7 +5,7 @@ plugins {
 
 val mavenRepository = "D:/Programs/Maven-local"
 group = "io.trouveyre.geopti"
-version = "1.0-SNAPSHOT"
+version = "0.1"
 
 repositories {
     mavenCentral()
@@ -13,6 +13,7 @@ repositories {
 
 kotlin {
     jvm()
+    js()
 
     sourceSets {
         val commonMain by getting {
@@ -27,9 +28,13 @@ kotlin {
             }
         }
         val jvmMain by getting {
-            dependsOn(commonMain)
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
+            }
+        }
+        val jsMain by getting {
+            dependencies {
+                implementation(kotlin("stdlib-js"))
             }
         }
     }
@@ -39,9 +44,4 @@ publishing {
     repositories {
         maven(uri("file://$mavenRepository"))
     }
-
-    publications {
-        create<MavenPublication>("geopti")
-    }
 }
-

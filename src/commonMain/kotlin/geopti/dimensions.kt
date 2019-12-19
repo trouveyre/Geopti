@@ -1,3 +1,5 @@
+package geopti
+
 interface Dimensions
 
 interface TwoDimensions: Dimensions
