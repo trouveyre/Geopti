@@ -1,9 +1,12 @@
 package geopti
 
-interface Shape<D: Dimensions>: PointSet<D> {
+interface Shape<D: Sized>: PointSet<D> {
 
     //PROPERTIES
     var center: Point<D>
+    /**
+     * The diameter of the smallest circle or sphere that hold all the points of this shape.
+     */
     var size: Double
     //TODO orientation
 }
@@ -25,10 +28,7 @@ interface Shape3D: Shape<ThreeDimensions> {
 
 class Circle(
     var radius: Double,
-    override var center: Point<TwoDimensions> = geopti.Point2D(
-        0.0,
-        0.0
-    )
+    override var center: Point<TwoDimensions> = Point2D(0.0, 0.0)
 ): Shape2D {
 
     //PROPERTIES
@@ -44,15 +44,14 @@ class Circle(
 
     //METHODS
     override fun contains(point: Point<TwoDimensions>) = (point - center).norm <= radius
+    override fun nearestPoint(from: Point<TwoDimensions>): Point<TwoDimensions> {
+        return center + ((from - center) normedTo radius)
+    }
 }
 
 class Sphere(
     var radius: Double,
-    override var center: Point<ThreeDimensions> = geopti.Point3D(
-        0.0,
-        0.0,
-        0.0
-    )
+    override var center: Point<ThreeDimensions> = Point3D(0.0, 0.0, 0.0)
 ): Shape3D {
 
     //PROPERTIES
@@ -71,4 +70,7 @@ class Sphere(
 
     //METHODS
     override fun contains(point: Point<ThreeDimensions>) = (point - center).norm <= radius
+    override fun nearestPoint(from: Point<ThreeDimensions>): Point<ThreeDimensions> {
+        return center + ((from - center) normedTo radius)
+    }
 }

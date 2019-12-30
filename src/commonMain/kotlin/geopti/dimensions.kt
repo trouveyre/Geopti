@@ -1,9 +1,9 @@
 package geopti
 
-interface Dimensions
+interface Sized
 
-interface TwoDimensions: Dimensions
+interface TwoDimensions: Sized
 
-interface ThreeDimensions: Dimensions
+interface ThreeDimensions: Sized
 
-interface FourDimensions: Dimensions
+interface FourDimensions: Sized

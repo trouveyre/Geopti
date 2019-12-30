@@ -3,7 +3,8 @@ plugins {
     `maven-publish`
 }
 
-val mavenRepository = "D:/Programs/Maven-local"
+//val mavenRepository = "D:/Programs/Maven-local"
+val mavenRepository = "C:/Maven-local"
 group = "io.trouveyre.geopti"
 version = "0.1"
 

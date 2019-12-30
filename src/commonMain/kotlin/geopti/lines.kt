@@ -2,34 +2,26 @@ package geopti
 
 import kotlin.math.abs
 
-typealias Point<D> = Vector<D>
-typealias Point2D = Vector2D
-typealias Point3D = Vector3D
-
 /**
- * Fast way to create a geopti.SegmentLine.
+ * Fast way to create a SegmentLine.
  * @see SegmentLine
  */
-infix fun <D: Dimensions> Point<D>.xlx(point: Point<D>) =
-    geopti.SegmentLine(this, point)
+operator fun <D: Sized> Point<D>.rangeTo(point: Point<D>) = SegmentLine(this, point)
 /**
- * Fast way to create a geopti.RayLine with the l-value as its origin.
+ * Fast way to create a RayLine with the l-value as its origin.
  * @see RayLine
  */
-infix fun <D: Dimensions> Point<D>.xl_(point: Point<D>) =
-    geopti.RayLine(this, point)
+infix fun <D: Sized> Point<D>.xl_(point: Point<D>) = RayLine(this, point)
 /**
- * Fast way to create a geopti.RayLine with the r-value as its origin.
+ * Fast way to create a RayLine with the r-value as its origin.
  * @see RayLine
  */
-infix fun <D: Dimensions> Point<D>._lx(point: Point<D>) =
-    geopti.RayLine(point, this)
+infix fun <D: Sized> Point<D>._lx(point: Point<D>) = RayLine(point, this)
 /**
- * Fast way to create a geopti.StraightLine.
+ * Fast way to create a StraightLine.
  * @see StraightLine
  */
-infix fun <D: Dimensions> Point<D>._l_(point: Point<D>) =
-    geopti.StraightLine(this, point)
+infix fun <D: Sized> Point<D>._l_(point: Point<D>) = StraightLine(this, point)
 
 /* TODO if the previous functions do not work
 /**
@@ -77,32 +69,48 @@ infix fun geopti.Point3D._3_(point: geopti.Point3D) = geopti.StraightLine(this, 
 /**
  * Represents lines with points of dimension D.
  */
-interface Line<D: Dimensions>: PointSet<D> {
+interface Line<D: Sized>: PointSet<D> {
 
     //PROPERTIES
     var a: Point<D>
     var b: Point<D>
+
+    //METHODS
+    /**
+     * Returns the nearest point to the parameter on this Line.
+     * If this.a == this.b, returns the point given.
+     */
+    override fun nearestPoint(from: Point<D>): Point<D>
 }
 
-abstract class AbstractLine<D: Dimensions>: Line<D> {
+abstract class AbstractLine<D: Sized>: Line<D> {
 
     //PROPERTIES
     protected abstract var vector: Vector<D>
     override var b: Point<D>
         get() = a + vector
         set(value) { vector = value - a }
+
+    //METHODS
+    override fun nearestPoint(from: Point<D>): Point<D> {
+        return (from - a)[vector]?.plus(a) ?: from
+    }
 }
 
 /**
  * Represents segments with points of dimension D.
  */
-class SegmentLine<D: Dimensions>(
+class SegmentLine<D: Sized>(
     override var a: Point<D>,
     b: Point<D>
-): AbstractLine<D>() {
+): AbstractLine<D>(), ClosedRange<Point<D>> {
 
     //PROPERTIES
     override var vector = b - a
+    override val start: Point<D>
+        get() = a
+    override val endInclusive: Point<D>
+        get() = b
 
     //METHODS
     override fun contains(point: Point<D>): Boolean {
@@ -117,7 +125,7 @@ class SegmentLine<D: Dimensions>(
 /**
  * Represents ray with points of dimension D.
  */
-class RayLine<D: Dimensions>(
+class RayLine<D: Sized>(
     var origin: Point<D>,
     b: Point<D>
 ): AbstractLine<D>() {
@@ -138,7 +146,7 @@ class RayLine<D: Dimensions>(
 /**
  * Represents straight lines with points of dimension D.
  */
-class StraightLine<D: Dimensions>(
+class StraightLine<D: Sized>(
     override var a: Point<D>,
     b: Point<D>
 ): AbstractLine<D>() {

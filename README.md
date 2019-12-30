@@ -1,2 +1,2 @@
-  geopti *- high precision and fast computing tools for geometrics*
+  geopti *- a mathematics toolbox for geometric purposes*
 --------------------------------------------------------------------

@@ -1,11 +1,12 @@
 package geopti
 
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
- * Fast way to make a geopti.Vector.
+ * Fast way to make a Vector.
  * @param x The first dimension component.
  * @param y The second dimension component.
  * @see Vector
@@ -13,7 +14,7 @@ import kotlin.math.sin
  */
 fun v(x: Double, y: Double) = Vector2D(x, y)
 /**
- * Fast way to make a geopti.Vector.
+ * Fast way to make a Vector.
  * @param x The first dimension component.
  * @param y The second dimension component.
  * @param z The third dimension component.
@@ -22,11 +23,11 @@ fun v(x: Double, y: Double) = Vector2D(x, y)
  */
 fun v(x: Double, y: Double, z: Double) = Vector3D(x, y, z)
 /**
- * Fast way to make a geopti.Vector.
+ * Fast way to make a Vector.
  * @param x The first dimension component.
  * @param y The second dimension component.
  * @param z The third dimension component.
- * @param w The fourth dimension component. As a geopti.Quaternion, this is its real part.
+ * @param w The fourth dimension component. As a Quaternion, this is its real part.
  * @see Vector
  * @see Vector4D
  * @see Quaternion
@@ -40,7 +41,7 @@ fun v(x: Double, y: Double, z: Double, w: Double) = Vector4D(x, y, z, w)
  * @see Vector3D
  * @see Vector4D
  */
-interface Vector<D: Dimensions> {
+interface Vector<D: Sized>: Comparable<Vector<D>> {
 
     //PROPERTIES
     /**
@@ -57,7 +58,7 @@ interface Vector<D: Dimensions> {
     val z: Double
     /**
      * The fourth dimension component of this vector.
-     * As a geopti.Quaternion, this is its real part.
+     * As a Quaternion, this is its real part.
      */
     val w: Double
     /**
@@ -80,6 +81,10 @@ interface Vector<D: Dimensions> {
      * Computes the scalar product of this vector and the given vector.
      */
     infix fun dot(vector: Vector<D>): Double
+    /**
+     * Returns the projection of this Vector onto 'vector' or null if vector.norm == 0.0
+     */
+    operator fun get(vector: Vector<D>): Vector<D>?
     operator fun minus(vector: Vector<D>): Vector<D>
     operator fun plus(vector: Vector<D>): Vector<D>
     operator fun times(vector: Vector<D>): Vector<D>
@@ -87,6 +92,7 @@ interface Vector<D: Dimensions> {
     operator fun unaryPlus(): Vector<D>
     operator fun div(number: Double): Vector<D>
     operator fun times(number: Double): Vector<D>
+    infix fun normedTo(number: Double): Vector<D>
     /**
      * Returns the sum of all the components.
      */
@@ -94,24 +100,24 @@ interface Vector<D: Dimensions> {
     override fun toString(): String
 
     /**
-     * Converts this geopti.Vector to a geopti.Vector2D.
+     * Converts this Vector to a Vector2D.
      * @see Vector2D
      */
     fun toVector2D(): Vector2D
     /**
-     * Converts this geopti.Vector to a geopti.Vector3D.
+     * Converts this Vector to a Vector3D.
      * @see Vector3D
      */
     fun toVector3D(): Vector3D
     /**
-     * Converts this geopti.Vector to a geopti.Vector4D.
+     * Converts this Vector to a Vector4D.
      * @see Vector4D
      */
     fun toVector4D(): Vector4D
 }
 
 /**
- * Represents 2-dimensions vectors.
+ * Represents 2-dimensions mutable vectors.
  */
 class Vector2D(
     override var x: Double,
@@ -132,9 +138,21 @@ class Vector2D(
         }
 
     //METHODS
+    override fun compareTo(other: Vector<TwoDimensions>): Int {
+        return ceil((this - other).norm).toInt()
+    }
     override fun copy() = Vector2D(x, y)
 
     override infix fun dot(vector: Vector<TwoDimensions>) = x * vector.x + y * vector.y
+    override fun get(vector: Vector<TwoDimensions>): Vector<TwoDimensions>? {
+        return if (vector.norm == 0.0)
+            null
+        else {
+            vector.toVector2D().apply {
+                norm = this dot (vector / vector.norm)
+            }
+        }
+    }
     override operator fun minus(vector: Vector<TwoDimensions>) =
         Vector2D(
             x - vector.x,
@@ -160,6 +178,7 @@ class Vector2D(
         x * number,
         y * number
     )
+    override fun normedTo(number: Double) = toVector2D().apply { norm = number }
 
     /**
      * Rotates this vector of the given angle.
@@ -180,7 +199,7 @@ class Vector2D(
 }
 
 /**
- * Represents 3-dimensions vectors.
+ * Represents 3-dimensions mutable vectors.
  */
 class Vector3D(
     override var x: Double,
@@ -202,6 +221,9 @@ class Vector3D(
         }
 
     //METHODS
+    override fun compareTo(other: Vector<ThreeDimensions>): Int {
+        return ceil((this - other).norm).toInt()
+    }
     override fun copy() = Vector3D(x, y, z)
 
     /**
@@ -213,6 +235,15 @@ class Vector3D(
         x * vector.y - y * vector.x
     )
     override infix fun dot(vector: Vector<ThreeDimensions>) = x * vector.x + y * vector.y + z * vector.z
+    override fun get(vector: Vector<ThreeDimensions>): Vector<ThreeDimensions>? {
+        return if (vector.norm == 0.0)
+            null
+        else {
+            vector.toVector3D().apply {
+                norm = this dot (vector / vector.norm)
+            }
+        }
+    }
     override operator fun minus(vector: Vector<ThreeDimensions>) =
         Vector3D(
             x - vector.x,
@@ -243,6 +274,7 @@ class Vector3D(
         y * number,
         z * number
     )
+    override fun normedTo(number: Double) = toVector3D().apply { norm = number }
 
     fun rotate(of: Double, around: Vector3D): Vector3D {    //TODO verify
         if (around.norm != 1.0)
@@ -294,7 +326,7 @@ class Vector3D(
 }
 
 /**
- * Represents 4-dimensions vectors and quaternions.
+ * Represents 4-dimensions mutable vectors and quaternions.
  */
 typealias Quaternion = Vector4D //TODO Is that really good as typealias ?
 class Vector4D(
@@ -318,10 +350,13 @@ class Vector4D(
         }
 
     //METHODS
+    override fun compareTo(other: Vector<FourDimensions>): Int {
+        return ceil((this - other).norm).toInt()
+    }
     override fun copy() = Vector4D(x, y, z, w)
 
     /**
-     * Returns the conjugate of this as geopti.Quaternion.
+     * Returns the conjugate of this as Quaternion.
      * @see Quaternion
      */
     fun conjugate() = Vector4D(-x, -y, -z, w)
@@ -330,6 +365,15 @@ class Vector4D(
      */
     /*TODO see for override*/ fun inv() = conjugate() / norm
     override infix fun dot(vector: Vector<FourDimensions>) = x * vector.x + y * vector.y + z * vector.z + w * vector.w
+    override fun get(vector: Vector<FourDimensions>): Vector<FourDimensions>? {
+        return if (vector.norm == 0.0)
+            null
+        else {
+            vector.toVector4D().apply {
+                norm = this dot (vector / vector.norm)
+            }
+        }
+    }
     override operator fun minus(vector: Vector<FourDimensions>) =
         Vector4D(
             x - vector.x,
@@ -366,6 +410,7 @@ class Vector4D(
         z * number,
         w * number
     )
+    override fun normedTo(number: Double) = toVector4D().apply { norm = number }
 
     override fun sum() = x + y + z + w
 
@@ -374,4 +419,10 @@ class Vector4D(
     override fun toVector2D() = Vector2D(x, y)
     override fun toVector3D() = Vector3D(x, y, z)
     override fun toVector4D() = copy()
+}
+
+operator fun <D: Sized> Vector<D>.get(vararg axis: Vector<D>): Vector<D>? {
+    return axis.map { this[it] }.reduce { acc, vector ->
+        if (vector === null) null else acc?.plus(vector)
+    }
 }
