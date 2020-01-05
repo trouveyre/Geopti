@@ -1,15 +1,49 @@
 package geopti
 
-typealias Point<D> = Vector<D>
+typealias Point<V> = Vector<V>
 typealias Point2D = Vector2D
 typealias Point3D = Vector3D
 
-interface PointSet<D: Sized> {
+interface PointSet<P: Point<P>, S: PointSet<P, S>> {
+
+    //PROPERTIES
+    /**
+     * TODO
+     */
+    var pivotalPoint: P
+
 
     //METHODS
-    operator fun contains(point: Point<D>): Boolean
+    fun copy(): S
+
+    operator fun contains(point: P): Boolean
     /**
-     * Returns the nearest point of this PointSet to the point given.
+     * Returns the nearest point of this PointSet from the point given.
      */
-    fun nearestPoint(from: Point<D>): Point<D>
+    fun nearestPoint(to: P): P
 }
+
+
+/**
+ * TODO
+ */
+fun <V: Vector<V>, S: PointSet<V, S>> S.translate(by: V): S {
+    return this.apply { pivotalPoint += by }
+}
+
+/**
+ * TODO
+ */
+infix fun <P: Point<P>, S: PointSet<P, S>> S.translatedTo(point: P): S {
+    return this.apply { pivotalPoint = point }
+}
+
+
+/**
+ * Fast way to make a Point.
+ */
+fun p(x: Double, y: Double): Point2D = v(x, y)
+/**
+ * Fast way to make a Point.
+ */
+fun p(x: Double, y: Double, z: Double): Point3D = v(x, y, z)

@@ -1,104 +1,51 @@
 package geopti
 
-import kotlin.math.ceil
-import kotlin.math.cos
-import kotlin.math.hypot
-import kotlin.math.sin
+import kotlin.math.*
 
 /**
- * Fast way to make a Vector.
- * @param x The first dimension component.
- * @param y The second dimension component.
- * @see Vector
+ * The superclass of all Vectors.
  * @see Vector2D
- */
-fun v(x: Double, y: Double) = Vector2D(x, y)
-/**
- * Fast way to make a Vector.
- * @param x The first dimension component.
- * @param y The second dimension component.
- * @param z The third dimension component.
- * @see Vector
  * @see Vector3D
- */
-fun v(x: Double, y: Double, z: Double) = Vector3D(x, y, z)
-/**
- * Fast way to make a Vector.
- * @param x The first dimension component.
- * @param y The second dimension component.
- * @param z The third dimension component.
- * @param w The fourth dimension component. As a Quaternion, this is its real part.
- * @see Vector
- * @see Vector4D
  * @see Quaternion
  */
-fun v(x: Double, y: Double, z: Double, w: Double) = Vector4D(x, y, z, w)
-
-/**
- * Represents immutable vectors with a length D.
- * The implementations of this are mutable.
- * @see Vector2D
- * @see Vector3D
- * @see Vector4D
- */
-interface Vector<D: Sized>: Comparable<Vector<D>> {
+interface Vector<V: Vector<V>>: Vectorial<V> {
 
     //PROPERTIES
     /**
-     * The first dimension component of this vector.
+     * The norm of this Vector.
      */
-    val x: Double
+    var norm: Double
     /**
-     * The second dimension component of this vector.
+     * The norm of this Vector squared.
      */
-    val y: Double
+    var norm2: Double
     /**
-     * The third dimension component of this vector.
+     * Checks if all the components are equal to 0.
      */
-    val z: Double
-    /**
-     * The fourth dimension component of this vector.
-     * As a Quaternion, this is its real part.
-     */
-    val w: Double
-    /**
-     * The norm of this vector.
-     */
-    val norm: Double
+    val isNull: Boolean
+
 
     //METHODS
-    operator fun component1(): Double = x
-    operator fun component2(): Double = y
-    operator fun component3(): Double = z
-    operator fun component4(): Double = w
-
     /**
      * Makes a copy of this vector.
      */
-    fun copy(): Vector<D>
-
+    fun copy(): V
     /**
-     * Computes the scalar product of this vector and the given vector.
+     * Computes the scalar product of this vector and the one given.
      */
-    infix fun dot(vector: Vector<D>): Double
-    /**
-     * Returns the projection of this Vector onto 'vector' or null if vector.norm == 0.0
-     */
-    operator fun get(vector: Vector<D>): Vector<D>?
-    operator fun minus(vector: Vector<D>): Vector<D>
-    operator fun plus(vector: Vector<D>): Vector<D>
-    operator fun times(vector: Vector<D>): Vector<D>
-    operator fun unaryMinus(): Vector<D>
-    operator fun unaryPlus(): Vector<D>
-    operator fun div(number: Double): Vector<D>
-    operator fun times(number: Double): Vector<D>
-    infix fun normedTo(number: Double): Vector<D>
+    infix fun dot(other: V): Double
+    operator fun minus(other: V): V
+    operator fun plus(other: V): V
+    operator fun div(number: Double): V
+    operator fun times(number: Double): V
+    operator fun unaryMinus(): V
+    operator fun unaryPlus(): V
     /**
      * Returns the sum of all the components.
      */
     fun sum(): Double
-    override fun toString(): String
 
+    override fun toString(): String
     /**
      * Converts this Vector to a Vector2D.
      * @see Vector2D
@@ -110,23 +57,33 @@ interface Vector<D: Sized>: Comparable<Vector<D>> {
      */
     fun toVector3D(): Vector3D
     /**
-     * Converts this Vector to a Vector4D.
-     * @see Vector4D
+     * Converts this Vector to a Quaternion.
+     * @see Quaternion
      */
-    fun toVector4D(): Vector4D
+    fun toQuaternion(): Quaternion
 }
+
+
 
 /**
  * Represents 2-dimensions mutable vectors.
  */
 class Vector2D(
-    override var x: Double,
-    override var y: Double
-): Vector<TwoDimensions> {
+    /**
+     * The first dimension component of this vector.
+     */
+    var x: Double,
+    /**
+     * The second dimension component of this vector.
+     */
+    var y: Double
+): Vector<Vector2D> {
+
 
     //PROPERTIES
-    override val z = 0.0
-    override val w = 0.0
+    override val descriptor: Vector2D
+        get() = this
+
     override var norm: Double
         get() = hypot(x, y)
         set(value) {
@@ -136,37 +93,37 @@ class Vector2D(
                 y *= value / norm
             }
         }
+    override var norm2: Double
+        get() = x * x + y * y
+        set(value) { norm = sqrt(value) }
+    var radius: Double
+        get() = norm
+        set(value) { norm = value }
+    var azimuth: Double
+        get() = atan2(y, x)
+        set(value) {
+            x = radius * cos(value)
+            y = radius * sin(value)
+        }
+    override val isNull: Boolean
+        get() = x == 0.0 && y == 0.0
+
 
     //METHODS
-    override fun compareTo(other: Vector<TwoDimensions>): Int {
-        return ceil((this - other).norm).toInt()
-    }
+    operator fun component1() = x
+    operator fun component2() = y
+
     override fun copy() = Vector2D(x, y)
 
-    override infix fun dot(vector: Vector<TwoDimensions>) = x * vector.x + y * vector.y
-    override fun get(vector: Vector<TwoDimensions>): Vector<TwoDimensions>? {
-        return if (vector.norm == 0.0)
-            null
-        else {
-            vector.toVector2D().apply {
-                norm = this dot (vector / vector.norm)
-            }
-        }
-    }
-    override operator fun minus(vector: Vector<TwoDimensions>) =
-        Vector2D(
-            x - vector.x,
-            y - vector.y
+    override infix fun dot(other: Vector2D) = x * other.x + y * other.y
+    override operator fun minus(other: Vector2D) = Vector2D(
+            x - other.x,
+            y - other.y
         )
-    override operator fun plus(vector: Vector<TwoDimensions>) =
-        Vector2D(
-            x + vector.x,
-            y + vector.y
+    override operator fun plus(other: Vector2D) = Vector2D(
+            x + other.x,
+            y + other.y
         )
-    override fun times(vector: Vector<TwoDimensions>) = Vector2D(
-        (vector * x).sum(),
-        (vector * y).sum()
-    )
     override operator fun unaryMinus() = Vector2D(-x, -y)
     override operator fun unaryPlus() = Vector2D(x, y)
 
@@ -178,16 +135,6 @@ class Vector2D(
         x * number,
         y * number
     )
-    override fun normedTo(number: Double) = toVector2D().apply { norm = number }
-
-    /**
-     * Rotates this vector of the given angle.
-     * @param of the angle of rotation
-     */
-    fun rotate(of: Double) = Vector2D(
-        cos(of) * x - sin(of) * y,
-        sin(of) * x + cos(of) * y
-    )
 
     override fun sum() = x + y
 
@@ -195,20 +142,34 @@ class Vector2D(
 
     override fun toVector2D() = copy()
     override fun toVector3D() = Vector3D(x, y, 0.0)
-    override fun toVector4D() = Vector4D(x, y, 0.0, 0.0)
+    override fun toQuaternion() = Quaternion(0.0, toVector3D())
 }
 
 /**
  * Represents 3-dimensions mutable vectors.
  */
 class Vector3D(
-    override var x: Double,
-    override var y: Double,
-    override var z: Double
-): Vector<ThreeDimensions> {
+    /**
+     * The first dimension component of this vector.
+     */
+    var x: Double,
+    /**
+     * The second dimension component of this vector.
+     */
+    var y: Double,
+    /**
+     * The third dimension component of this vector.
+     */
+    var z: Double
+): Vector<Vector3D> {
 
     //PROPERTIES
-    override val w = 0.0
+    override val descriptor: Vector3D
+        get() = this
+
+    /**
+     * The norm of this vector.
+     */
     override var norm: Double
         get() = hypot(x, hypot(y, z))
         set(value) {
@@ -219,47 +180,38 @@ class Vector3D(
                 z *= value / norm
             }
         }
+    override var norm2: Double
+        get() = x * x + y * y + z * z
+        set(value) { norm = sqrt(value) }
+    override val isNull: Boolean
+        get() = x == 0.0 && y == 0.0 && z == 0.0
+
 
     //METHODS
-    override fun compareTo(other: Vector<ThreeDimensions>): Int {
-        return ceil((this - other).norm).toInt()
-    }
+    operator fun component1() = x
+    operator fun component2() = y
+    operator fun component3() = z
+
     override fun copy() = Vector3D(x, y, z)
 
     /**
      * Computes the vector product of this vector and the given vector.
      */
-    infix fun x(vector: Vector3D) = Vector3D(
+    infix fun cross(vector: Vector3D) = Vector3D(
         y * vector.z - z * vector.y,
         z * vector.x - x * vector.z,
         x * vector.y - y * vector.x
     )
-    override infix fun dot(vector: Vector<ThreeDimensions>) = x * vector.x + y * vector.y + z * vector.z
-    override fun get(vector: Vector<ThreeDimensions>): Vector<ThreeDimensions>? {
-        return if (vector.norm == 0.0)
-            null
-        else {
-            vector.toVector3D().apply {
-                norm = this dot (vector / vector.norm)
-            }
-        }
-    }
-    override operator fun minus(vector: Vector<ThreeDimensions>) =
-        Vector3D(
-            x - vector.x,
-            y - vector.y,
-            z - vector.z
-        )
-    override operator fun plus(vector: Vector<ThreeDimensions>) =
-        Vector3D(
-            x + vector.x,
-            y + vector.y,
-            z + vector.z
-        )
-    override fun times(vector: Vector<ThreeDimensions>) = Vector3D(
-        (vector * x).sum(),
-        (vector * y).sum(),
-        (vector * z).sum()
+    override infix fun dot(other: Vector3D) = x * other.x + y * other.y + z * other.z
+    override operator fun minus(other: Vector3D) = Vector3D(
+        x - other.x,
+        y - other.y,
+        z - other.z
+    )
+    override operator fun plus(other: Vector3D) = Vector3D(
+        x + other.x,
+        y + other.y,
+        z + other.z
     )
     override operator fun unaryMinus() = Vector3D(-x, -y, -z)
     override operator fun unaryPlus() = Vector3D(x, y, z)
@@ -274,47 +226,6 @@ class Vector3D(
         y * number,
         z * number
     )
-    override fun normedTo(number: Double) = toVector3D().apply { norm = number }
-
-    fun rotate(of: Double, around: Vector3D): Vector3D {    //TODO verify
-        if (around.norm != 1.0)
-            around.norm = 1.0
-        val sinBy2 = sin(of / 2)
-        val q = Quaternion(
-            cos(of / 2),
-            sinBy2 * around.x,
-            sinBy2 * around.y,
-            sinBy2 * around.z
-        )
-        return (q * this.toVector4D() * q.inv()).toVector3D()
-    }
-    /**
-     * Rotates this vector of the given angle around the X axis.
-     * @param of the angle of rotation
-     */
-    fun rotateAroundX(of: Double) = Vector3D(
-        cos(of) * x - sin(of) * y,
-        sin(of) * x + cos(of) * y,
-        z
-    )
-    /**
-     * Rotates this vector of the given angle around the Y axis.
-     * @param of the angle of rotation
-     */
-    fun rotateAroundY(of: Double) = Vector3D(
-        cos(of) * x + sin(of) * z,
-        y,
-        cos(of) * z - sin(of) * x
-    )
-    /**
-     * Rotates this vector of the given angle around the Z axis.
-     * @param of the angle of rotation
-     */
-    fun rotateAroundZ(of: Double) = Vector3D(
-        x,
-        cos(of) * y - sin(of) * z,
-        sin(of) * y + cos(of) * z
-    )
 
     override fun sum() = x + y + z
 
@@ -322,21 +233,38 @@ class Vector3D(
 
     override fun toVector2D() = Vector2D(x, y)
     override fun toVector3D() = copy()
-    override fun toVector4D() = Vector4D(x, y, z, 0.0)
+    override fun toQuaternion() = Quaternion(0.0, toVector3D())
 }
 
+
+
 /**
- * Represents 4-dimensions mutable vectors and quaternions.
+ * Represents quaternions.
  */
-typealias Quaternion = Vector4D //TODO Is that really good as typealias ?
-class Vector4D(
-    override var x: Double,
-    override var y: Double,
-    override var z: Double,
-    override var w: Double
-): Vector<FourDimensions> {
+class Quaternion(
+    var realPart: Double,
+    var imaginaryPart: Vector3D
+): Vector<Quaternion> {
 
     //PROPERTIES
+    override val descriptor: Quaternion
+        get() = this
+
+    var w: Double
+        get() = realPart
+        set(value) { realPart = value }
+    var x: Double
+        get() = imaginaryPart.x
+        set(value) { imaginaryPart.x = value }
+    var y: Double
+        get() = imaginaryPart.y
+        set(value) { imaginaryPart.y = value }
+    var z: Double
+        get() = imaginaryPart.z
+        set(value) { imaginaryPart.z = value }
+    /**
+     * The norm of this vector.
+     */
     override var norm: Double
         get() = hypot(x, hypot(y, hypot(z, w)))
         set(value) {
@@ -348,69 +276,53 @@ class Vector4D(
                 w *= value / norm
             }
         }
+    override var norm2: Double
+        get() = w * w + x * x + y * y + z * z
+        set(value) { norm = sqrt(value) }
+    override val isNull: Boolean
+        get() = realPart == 0.0 && imaginaryPart.isNull
+
 
     //METHODS
-    override fun compareTo(other: Vector<FourDimensions>): Int {
-        return ceil((this - other).norm).toInt()
-    }
-    override fun copy() = Vector4D(x, y, z, w)
+    operator fun component1() = realPart
+    operator fun component2() = imaginaryPart
+
+    override fun copy() = Quaternion(realPart, imaginaryPart)
 
     /**
      * Returns the conjugate of this as Quaternion.
      * @see Quaternion
      */
-    fun conjugate() = Vector4D(-x, -y, -z, w)
+    fun conjugate() = Quaternion(realPart, -imaginaryPart)
     /**
      * Returns the quaternion q which match: this * q = 1.0.
      */
-    /*TODO see for override*/ fun inv() = conjugate() / norm
-    override infix fun dot(vector: Vector<FourDimensions>) = x * vector.x + y * vector.y + z * vector.z + w * vector.w
-    override fun get(vector: Vector<FourDimensions>): Vector<FourDimensions>? {
-        return if (vector.norm == 0.0)
-            null
-        else {
-            vector.toVector4D().apply {
-                norm = this dot (vector / vector.norm)
-            }
-        }
-    }
-    override operator fun minus(vector: Vector<FourDimensions>) =
-        Vector4D(
-            x - vector.x,
-            y - vector.y,
-            z - vector.z,
-            w - vector.w
-        )
-    override operator fun plus(vector: Vector<FourDimensions>) =
-        Vector4D(
-            x + vector.x,
-            y - vector.y,
-            z - vector.z,
-            w + vector.w
-        )
-    override operator fun unaryMinus() = Vector4D(-x, -y, -z, -w)
-    override operator fun unaryPlus() = Vector4D(x, y, z, w)
-    override operator fun times(vector: Vector<FourDimensions>) =
-        Vector4D(
-            (vector * x).sum(),
-            (vector * y).sum(),
-            (vector * z).sum(),
-            (vector * w).sum()
-        )
+    fun inv() = conjugate() / (w * w + x * x + y * y + z * z)
 
-    override operator fun div(number: Double) = Vector4D(
-        x / number,
-        y / number,
-        z / number,
-        w / number
+    override infix fun dot(other: Quaternion) = x * other.x + y * other.y + z * other.z + w * other.w
+    override operator fun minus(other: Quaternion) = Quaternion(
+        realPart - other.realPart,
+        imaginaryPart - other.imaginaryPart
     )
-    override operator fun times(number: Double) = Vector4D(
-        x * number,
-        y * number,
-        z * number,
-        w * number
+    override operator fun plus(other: Quaternion) = Quaternion(
+        realPart - other.realPart,
+        imaginaryPart - other.imaginaryPart
     )
-    override fun normedTo(number: Double) = toVector4D().apply { norm = number }
+    override operator fun unaryMinus() = Quaternion(-realPart, -imaginaryPart)
+    override operator fun unaryPlus() = Quaternion(realPart, imaginaryPart)
+    operator fun times(other: Quaternion) = Quaternion(
+        realPart * other.realPart - (imaginaryPart dot other.imaginaryPart),
+        w * other.imaginaryPart + other.w * imaginaryPart + (imaginaryPart cross other.imaginaryPart)
+    )
+
+    override operator fun div(number: Double) = Quaternion(
+        realPart / number,
+        imaginaryPart / number
+    )
+    override operator fun times(number: Double) = Quaternion(
+        realPart / number,
+        imaginaryPart / number
+    )
 
     override fun sum() = x + y + z + w
 
@@ -418,11 +330,62 @@ class Vector4D(
 
     override fun toVector2D() = Vector2D(x, y)
     override fun toVector3D() = Vector3D(x, y, z)
-    override fun toVector4D() = copy()
+    override fun toQuaternion() = copy()
 }
 
-operator fun <D: Sized> Vector<D>.get(vararg axis: Vector<D>): Vector<D>? {
-    return axis.map { this[it] }.reduce { acc, vector ->
-        if (vector === null) null else acc?.plus(vector)
-    }
+
+
+/**
+ * Fast way to make a Vector.
+ * @param x The first dimension component.
+ * @param y The second dimension component.
+ * @see Vector
+ * @see Vector2D
+ */
+fun v(x: Double, y: Double) = Vector2D(x, y)
+
+/**
+ * Fast way to make a Vector.
+ * @param x The first dimension component.
+ * @param y The second dimension component.
+ * @param z The third dimension component.
+ * @see Vector
+ * @see Vector3D
+ */
+fun v(x: Double, y: Double, z: Double) = Vector3D(x, y, z)
+
+/**
+ * Returns the projection of this Vector onto 'vector' or null if 'vector' is the vector null.
+ */
+operator fun <V: Vector<V>> V.get(on: V): V? {
+    return if (on.isNull)
+        null
+    else
+        on.copy().apply { norm = this dot (on / on.norm) }
 }
+/**
+ * Returns the projection of this Vector onto the plane of the Vectors given or null if the plane is not valid.
+ */
+operator fun <V: Vector<V>> V.get(plane: Pair<V, V>): V? {
+    return if (plane.first dot plane.second == 0.0) {
+        val onJ = this[plane.second]
+        if (onJ === null)
+            null
+        else
+            this[plane.first]?.plus(onJ)
+    }
+    else null
+}
+
+/**
+ * Checks if the two Vectors are collinear.
+ * Two Vectors v1 and v2 are considered collinear if |v1 . v2| = |v1| * |v2|.
+ */
+infix fun <V: Vector<V>> V.isCollinearWith(other: V): Boolean = abs(this dot other) == norm * other.norm
+
+/**
+ * Sets this Vector's norm to 'number' then returns it.
+ */
+infix fun <V: Vector<V>> V.normedTo(number: Double) = this.apply { norm = number }
+
+operator fun <V: Vector<V>> Number.times(vector: V): V = vector * this.toDouble()
