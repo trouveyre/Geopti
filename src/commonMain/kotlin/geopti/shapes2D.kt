@@ -47,7 +47,7 @@ class Circle(
         return if (to in this)
             to.copy()
         else
-            center + ((to - center) normedTo radius)
+            center + (to - center).normed(radius)
     }
 }
 
@@ -94,8 +94,8 @@ open class Rectangle(
     final override fun nearestPoint(to: Point2D): Point2D {
         val relativePoint = (to - center).rotate(-orientation)
         val result = v(0.0, 0.0)
-        result.x += relativePoint[v(1.0, 0.0)]?.x?.coerceIn(-hWidth, hWidth) ?: 0.0
-        result.y += relativePoint[v(0.0, 1.0)]?.y?.coerceIn(-hHeight, hHeight) ?: 0.0
+        result.x += relativePoint[v(1.0, 0.0)].x.coerceIn(-hWidth, hWidth)
+        result.y += relativePoint[v(0.0, 1.0)].y.coerceIn(-hHeight, hHeight)
         return result.rotate(orientation) + center
     }
 }

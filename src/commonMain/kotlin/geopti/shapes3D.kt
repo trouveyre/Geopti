@@ -52,7 +52,7 @@ class Ball(
         return if (to in this)
             to.copy()
         else
-            center + ((to - center) normedTo radius)
+            center + (to - center).normed(radius)
     }
 }
 
@@ -100,22 +100,17 @@ open class Cuboid(
 
     final override fun contains(point: Point3D): Boolean {
         val relativePoint = (point - center).rotate(-orientation)
-        return abs(relativePoint.x) == hWidth &&
+        return abs(relativePoint.x) in 0.0..(hWidth) &&
                 abs(relativePoint.y) in 0.0..(hHeight) &&
-                abs(relativePoint.z) in 0.0..(hDepth) ||
-                abs(relativePoint.x) in 0.0..(hWidth) &&
-                abs(relativePoint.y) == hHeight &&
-                abs(relativePoint.z) in 0.0..(hDepth) ||
-                abs(relativePoint.x) in 0.0..(hWidth) &&
-                abs(relativePoint.y) in 0.0..(hHeight) &&
-                abs(relativePoint.z) == hDepth
+                abs(relativePoint.z) in 0.0..(hDepth)
     }
     final override fun nearestPoint(to: Point3D): Point3D {
         val relativePoint = (to - center).rotate(-orientation)
-        val result = v(0.0, 0.0, 0.0)
-        result.x = relativePoint[v(1.0, 0.0, 0.0)]?.x?.coerceIn(-hWidth, hWidth) ?: 0.0
-        result.y = relativePoint[v(0.0, 1.0, 0.0)]?.y?.coerceIn(-hHeight, hHeight) ?: 0.0
-        result.z = relativePoint[v(0.0, 0.0, 1.0)]?.z?.coerceIn(-hDepth, hDepth) ?: 0.0
+        val result = v(
+            relativePoint[v(1.0, 0.0, 0.0)].x.coerceIn(-hWidth, hWidth),
+            relativePoint[v(0.0, 1.0, 0.0)].y.coerceIn(-hHeight, hHeight),
+            relativePoint[v(0.0, 0.0, 1.0)].z.coerceIn(-hDepth, hDepth)
+        )
         return result.rotate(orientation) + center
     }
 }
@@ -206,25 +201,20 @@ open class CuboidFrame(    //TODO Is that a good name ? Noooo.
     }
     final override fun nearestPoint(to: Point3D): Point3D {
         val relativePoint = (to - center).rotate(-orientation)
-        val result = v(0.0, 0.0, 0.0)
-        val x = relativePoint[v(1.0, 0.0, 0.0)]?.x?.coerceIn(-hWidth, hWidth) ?: 0.0
-        val y = relativePoint[v(0.0, 1.0, 0.0)]?.y?.coerceIn(-hHeight, hHeight) ?: 0.0
-        val z = relativePoint[v(0.0, 0.0, 1.0)]?.z?.coerceIn(-hDepth, hDepth) ?: 0.0
-        result.x =
+        val x = relativePoint[v(1.0, 0.0, 0.0)].x.coerceIn(-hWidth, hWidth)
+        val y = relativePoint[v(0.0, 1.0, 0.0)].y.coerceIn(-hHeight, hHeight)
+        val z = relativePoint[v(0.0, 0.0, 1.0)].z.coerceIn(-hDepth, hDepth)
+        val result = v(
             if (hWidth - abs(x) <= hHeight - abs(y) && hWidth - abs(x) <= hDepth - abs(z))
                 hWidth * sign(x)
-            else
-                x
-        result.y =
+            else x,
             if (hHeight - abs(y) < hWidth - abs(x) && hHeight - abs(y) <= hDepth - abs(z))
                 hHeight * sign(y)
-            else
-                y
-        result.z =
+            else y,
             if (hDepth - abs(z) < hWidth - abs(x) && hDepth - abs(z) < hHeight - abs(y))
                 hDepth * sign(z)
-            else
-                z
+            else z
+        )
         return result.rotate(orientation) + center
     }
 }
@@ -290,6 +280,6 @@ class Sphere(
 
     override fun contains(point: Point3D) = (point - center).norm == radius
     override fun nearestPoint(to: Point3D): Point3D {
-        return center + ((to - center) normedTo radius)
+        return center + (to - center).normed(radius)
     }
 }

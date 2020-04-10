@@ -17,6 +17,8 @@ interface Line<P: Point<P>, L: Line<P, L>>: PointSet<P, L>, Vectorial<P> {
      * If this.a == this.b, returns the point given.
      */
     override fun nearestPoint(to: P): P
+
+    override fun toString(): String
 }
 
 /**
@@ -46,15 +48,17 @@ class SegmentLine<P: Point<P>>(
     override fun contains(point: P): Boolean {
         val relativePoint = point - pivotalPoint
         val dotProduct = relativePoint dot descriptor
-        return abs(dotProduct) == relativePoint.norm * descriptor.norm && dotProduct in 0.0..(descriptor.norm2)
+        return dotProduct == relativePoint.norm * descriptor.norm && dotProduct <= descriptor.norm2
     }
     override fun nearestPoint(to: P): P {
         val projection = (to - pivotalPoint)[descriptor]
-        return if (projection?.norm ?: .0 !in 0.0..descriptor.norm)
-            pivotalPoint
-        else
-            projection?.plus(pivotalPoint) ?: pivotalPoint
+        return when (val dotProduct = projection dot descriptor) {
+            in 0.0..descriptor.norm2 -> projection + pivotalPoint
+            else -> if (dotProduct < 0.0) pivotalPoint else b
+        }
     }
+
+    override fun toString() = "SegmentLine[$pivotalPoint, $b]"
 }
 
 
@@ -79,16 +83,17 @@ class RayLine<P: Point<P>>(
 
     override fun contains(point: P): Boolean {
         val relativePoint = point - pivotalPoint
-        val dotProduct = relativePoint dot descriptor
-        return abs(dotProduct) == relativePoint.norm * descriptor.norm && dotProduct >= 0.0
+        return relativePoint dot descriptor == relativePoint.norm * descriptor.norm
     }
     override fun nearestPoint(to: P): P {
         val relativePoint = to - pivotalPoint
-        return if (descriptor dot relativePoint < 0.0)
+        return if (descriptor dot relativePoint <= 0.0)
             pivotalPoint
         else
-            relativePoint[descriptor]?.plus(pivotalPoint) ?: pivotalPoint
+            relativePoint[descriptor] + pivotalPoint
     }
+
+    override fun toString() = "RayLine[$origin, $b)"
 }
 
 
@@ -109,11 +114,14 @@ class StraightLine<P: Point<P>>(
     override fun copy() = StraightLine(pivotalPoint, b)
 
     override fun contains(point: P): Boolean {
-        return (point - pivotalPoint) isCollinearWith descriptor
+        val relativePoint = point - pivotalPoint
+        return abs(relativePoint dot descriptor) == relativePoint.norm * descriptor.norm
     }
     override fun nearestPoint(to: P): P {
-        return (to - pivotalPoint)[descriptor]?.plus(pivotalPoint) ?: pivotalPoint
+        return (to - pivotalPoint)[descriptor] + pivotalPoint
     }
+
+    override fun toString() = "StraightLine($pivotalPoint, $b)"
 }
 
 

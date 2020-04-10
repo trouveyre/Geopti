@@ -4,6 +4,9 @@ typealias Point<V> = Vector<V>
 typealias Point2D = Vector2D
 typealias Point3D = Vector3D
 
+/**
+ * TODO
+ */
 interface PointSet<P: Point<P>, S: PointSet<P, S>> {
 
     //PROPERTIES

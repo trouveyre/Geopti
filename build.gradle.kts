@@ -1,10 +1,10 @@
 plugins {
-    kotlin("multiplatform") version "1.3.61"
+    kotlin("multiplatform") version "1.3.71"
     `maven-publish`
 }
 
-//val mavenRepository = "D:/Programs/Maven-local"
-val mavenRepository = "C:/Maven-local"
+val mavenRepository = "D:/Programs/Maven-local"
+//val mavenRepository = "C:/Maven-local"
 group = "io.trouveyre.geopti"
 version = "0.1"
 
@@ -33,9 +33,22 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(kotlin("test-junit"))
+//                implementation("org.junit.jupiter:junit-jupiter-api:5.6.1")
+//                runtimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.1")
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
             }
         }
     }

@@ -68,7 +68,7 @@ interface Vector<V: Vector<V>>: Vectorial<V> {
 /**
  * Represents 2-dimensions mutable vectors.
  */
-class Vector2D(
+data class Vector2D(
     /**
      * The first dimension component of this vector.
      */
@@ -110,9 +110,6 @@ class Vector2D(
 
 
     //METHODS
-    operator fun component1() = x
-    operator fun component2() = y
-
     override fun copy() = Vector2D(x, y)
 
     override infix fun dot(other: Vector2D) = x * other.x + y * other.y
@@ -148,7 +145,7 @@ class Vector2D(
 /**
  * Represents 3-dimensions mutable vectors.
  */
-class Vector3D(
+data class Vector3D(
     /**
      * The first dimension component of this vector.
      */
@@ -188,10 +185,6 @@ class Vector3D(
 
 
     //METHODS
-    operator fun component1() = x
-    operator fun component2() = y
-    operator fun component3() = z
-
     override fun copy() = Vector3D(x, y, z)
 
     /**
@@ -241,7 +234,7 @@ class Vector3D(
 /**
  * Represents quaternions.
  */
-class Quaternion(
+data class Quaternion(
     var realPart: Double,
     var imaginaryPart: Vector3D
 ): Vector<Quaternion> {
@@ -284,9 +277,6 @@ class Quaternion(
 
 
     //METHODS
-    operator fun component1() = realPart
-    operator fun component2() = imaginaryPart
-
     override fun copy() = Quaternion(realPart, imaginaryPart)
 
     /**
@@ -355,25 +345,20 @@ fun v(x: Double, y: Double) = Vector2D(x, y)
 fun v(x: Double, y: Double, z: Double) = Vector3D(x, y, z)
 
 /**
- * Returns the projection of this Vector onto 'vector' or null if 'vector' is the vector null.
+ * Returns the projection of this Vector onto 'vector'.
  */
-operator fun <V: Vector<V>> V.get(on: V): V? {
-    return if (on.isNull)
-        null
+operator fun <V: Vector<V>> V.get(on: V): V {
+    return if (isNull or on.isNull)
+        on * (this dot on)
     else
-        on.copy().apply { norm = this dot (on / on.norm) }
+        on * (this dot on) / (on dot on)
 }
 /**
  * Returns the projection of this Vector onto the plane of the Vectors given or null if the plane is not valid.
  */
-operator fun <V: Vector<V>> V.get(plane: Pair<V, V>): V? {
-    return if (plane.first dot plane.second == 0.0) {
-        val onJ = this[plane.second]
-        if (onJ === null)
-            null
-        else
-            this[plane.first]?.plus(onJ)
-    }
+operator fun <V: Vector<V>> V.get(plane: Pair<V, V>): V? {  //TODO Yeaaah... not sure about that
+    return if (plane.first dot plane.second == 0.0)
+        this[plane.first] + this[plane.second]
     else null
 }
 
@@ -386,6 +371,6 @@ infix fun <V: Vector<V>> V.isCollinearWith(other: V): Boolean = abs(this dot oth
 /**
  * Sets this Vector's norm to 'number' then returns it.
  */
-infix fun <V: Vector<V>> V.normedTo(number: Double) = this.apply { norm = number }
+fun <V: Vector<V>> V.normed(to: Double = 1.0) = this.apply { norm = to }
 
 operator fun <V: Vector<V>> Number.times(vector: V): V = vector * this.toDouble()
